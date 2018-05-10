@@ -31,4 +31,4 @@ The gateway may get very warm, because many updates have to be transmitted to up
 
 # Acknowledgements
 
-This program builds on CSharpTradfri-library from [tomidix](https://github.com/tomidix/CSharpTradFriLibrary) [NAudio](https://github.com/naudio/NAudio").
+This program builds on CSharpTradfri-library from [tomidix](https://github.com/tomidix/CSharpTradFriLibrary) and [NAudio](https://github.com/naudio/NAudio").
