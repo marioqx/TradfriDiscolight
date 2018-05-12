@@ -5,6 +5,8 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -100,25 +102,26 @@ namespace VUmeter
             var audiodevices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
             comboBox1.Items.AddRange( audiodevices.ToArray() );
 
-            // Fill the settings for the tradfri-gateway-connection
+            // Fill the settings for the tradfri-connection settings
             textBox3.Text = Properties.Settings.Default.GatewayIP;
             textBox1.Text = Properties.Settings.Default.ConnectionName;
-            textBox2.Text = Properties.Settings.Default.GatewaySecret;
+            textBox2.Text = Properties.Settings.Default.ConnectionSecret;
         }
 
 
+        // On application closing save back the tradfri-connection settings.
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
 
             bool SaveSettings = ( Properties.Settings.Default.GatewayIP.Equals(textBox3.Text) ) &
                                 ( Properties.Settings.Default.ConnectionName.Equals(textBox1.Text)) &
-                                ( Properties.Settings.Default.GatewaySecret.Equals(textBox2.Text));
+                                ( Properties.Settings.Default.ConnectionSecret.Equals(textBox2.Text));
 
             if ( !SaveSettings )
             {
                 Properties.Settings.Default.GatewayIP = textBox3.Text;
                 Properties.Settings.Default.ConnectionName = textBox1.Text;
-                Properties.Settings.Default.GatewaySecret = textBox2.Text;
+                Properties.Settings.Default.ConnectionSecret = textBox2.Text;
                 Properties.Settings.Default.Save();
             }
         }
@@ -154,12 +157,35 @@ namespace VUmeter
         }
 
 
+        private bool CheckTradfriAddress( string Address )
+        {
+            bool alive = false;
+            Ping pingSender = new Ping();
+            try
+            {
+                PingReply reply = pingSender.Send( Address );
+                alive = ( reply.Status == IPStatus.Success );
+            }
+            catch ( PingException )
+            {
+                return false;
+            }
+            return alive;
+        }
+
+
         private void ConnectTradfri()
         {
             try
             {
                 if (gatewayConnection == null )
                 {
+                    if (!CheckTradfriAddress(textBox3.Text))
+                    {
+                        MessageBox.Show("Could not find Tradfri gateway. Check address/DNS name.");
+                        return;
+                    }
+
                     gatewayConnection = new TradFriCoapConnector( textBox1.Text, textBox3.Text, textBox2.Text);
                     gatewayConnection.Connect();
                 }
@@ -167,9 +193,10 @@ namespace VUmeter
                 // Query all devices and list in the comboBox.
                 LoadAllDevices();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show("Couldn't connect to TradFri gateway with provided settings");
+                MessageBox.Show($"Couldn't connect to TradFri gateway with provided settings: {ex.Message}");
+                gatewayConnection = null;
             }
 
         }
@@ -190,7 +217,7 @@ namespace VUmeter
                 // consistently and at a much lower rate than the VU-meter shown in progressBar1.
                 // This is necessary, because a too high update-rate crashes the tradfri-gateway and further
                 // may limit live-expectancy of the bulb.
-                if ((index - level >= 3) || (level - index >= 5))
+                if ((index - level >= 3) || (level - index >= 3))
                 {
                     level = index;
                     update = true;
@@ -203,7 +230,7 @@ namespace VUmeter
                 }
 
                 // If required, then update the Tradfri-bulb color/dimmer and correspondigly the backcolor of the panel.
-                // For the individual buld, change the color. For the group change the dimmer.
+                // For the individual bulb, change the color. For the group change the dimmer.
                 if (update)
                 {
                     if (dc != null)
@@ -244,10 +271,45 @@ namespace VUmeter
             button2.Text = "Connecting";
             button2.Enabled = false;
             button2.Update();
-            ConnectTradfri();       // Note: This call hangs in case settings do not allow for successfully connection to the gateway.
+            ConnectTradfri(); 
             button2.Text = "Connect";
             button2.Enabled = true;
             button2.Update();
+        }
+
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            var Form2 = new Form2();
+
+            if (!CheckTradfriAddress(textBox3.Text))
+            {
+                MessageBox.Show("Could not find Tradfri gateway. Check address/DNS name.");
+                return;
+            }
+            Form2.textBox1.Text = textBox1.Text;
+            if ( Form2.ShowDialog().Equals(DialogResult.OK) )
+            {
+                try
+                {
+                    if (gatewayConnection == null)
+                    {
+                        gatewayConnection = new TradFriCoapConnector(textBox1.Text, textBox3.Text, textBox2.Text);
+                    }
+
+                    TradFriAuth ConnectionSecret = gatewayConnection.GeneratePSK(Form2.textBox2.Text, Form2.textBox1.Text);
+
+                    // Write the connection settings back to the respective text boxes.
+                    textBox1.Text = Form2.textBox1.Text;
+                    textBox2.Text = ConnectionSecret.PSK;
+                    gatewayConnection = null;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Couldn't connect to TradFri gateway with provided settings: {ex.Message}");
+                    gatewayConnection = null;
+                }
+            }
         }
 
 
@@ -274,5 +336,6 @@ namespace VUmeter
                 }
             }
         }
+
     }
 }

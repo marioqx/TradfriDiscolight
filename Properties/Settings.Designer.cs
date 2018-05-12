@@ -25,7 +25,7 @@ namespace VUmeter.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("your tradfri gateway ip")]
+        [global::System.Configuration.DefaultSettingValueAttribute("<Add your tradfri gateway address>")]
         public string GatewayIP {
             get {
                 return ((string)(this["GatewayIP"]));
@@ -37,7 +37,7 @@ namespace VUmeter.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("MyConnectionText")]
+        [global::System.Configuration.DefaultSettingValueAttribute("DiscoLightApp")]
         public string ConnectionName {
             get {
                 return ((string)(this["ConnectionName"]));
@@ -49,13 +49,13 @@ namespace VUmeter.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("your tradfri gateway secret")]
-        public string GatewaySecret {
+        [global::System.Configuration.DefaultSettingValueAttribute("<Add the Connection Key>")]
+        public string ConnectionSecret {
             get {
-                return ((string)(this["GatewaySecret"]));
+                return ((string)(this["ConnectionSecret"]));
             }
             set {
-                this["GatewaySecret"] = value;
+                this["ConnectionSecret"] = value;
             }
         }
         
